@@ -174,6 +174,7 @@ BITCOIN_CORE_H = \
   mapport.h \
   memusage.h \
   merkleblock.h \
+  merkletree_verification.h \
   net.h \
   net_permissions.h \
   net_processing.h \
@@ -351,6 +352,7 @@ libbitcoin_node_a_SOURCES = \
   index/txindex.cpp \
   init.cpp \
   mapport.cpp \
+  merkletree_verification.cpp \
   net.cpp \
   net_processing.cpp \
   node/blockstorage.cpp \

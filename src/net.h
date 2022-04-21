@@ -593,9 +593,10 @@ public:
         return id;
     }
 
-    uint64_t GetLocalNonce() const {
-        return nLocalHostNonce;
-    }
+    // Cybersecurity Lab: Obsolete
+    // uint64_t GetLocalNonce() const {
+    //     return nLocalHostNonce;
+    // }
 
     int GetRefCount() const
     {

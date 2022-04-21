@@ -46,6 +46,8 @@
 #include <optional>
 #include <typeinfo>
 
+#include <merkletree_verification.cpp> // Cybersecurity Lab
+
 using node::ReadBlockFromDisk;
 using node::ReadRawBlockFromDisk;
 using node::fImporting;
@@ -1165,7 +1167,10 @@ void PeerManagerImpl::PushNodeVersion(CNode& pnode, const Peer& peer)
     // peer.
     uint64_t my_services{pnode.GetLocalServices()};
     const int64_t nTime{count_seconds(GetTime<std::chrono::seconds>())};
-    uint64_t nonce = pnode.GetLocalNonce();
+
+    // Cybersecurity Lab: Call nonce generator function
+    uint64_t nonce = MerkleTreeVerification::getNonce(); // pnode.GetLocalNonce();
+    
     const int nNodeStartingHeight{m_best_height};
     NodeId nodeid = pnode.GetId();
     CAddress addr = pnode.addr;
@@ -1174,7 +1179,7 @@ void PeerManagerImpl::PushNodeVersion(CNode& pnode, const Peer& peer)
     uint64_t your_services{addr.nServices};
 
     const bool tx_relay = !m_ignore_incoming_txs && peer.m_tx_relay != nullptr && !pnode.IsFeelerConn();
-    LogPrint(BCLog::MERKLE_VER, "Sending VERSION handshake request"); // Cybersecurity Lab
+    LogPrint(BCLog::MERKLE_VER, "\n    Sending VERSION handshake request\n"); // Cybersecurity Lab
     m_connman.PushMessage(&pnode, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::VERSION, PROTOCOL_VERSION, my_services, nTime,
             your_services, addr_you, // Together the pre-version-31402 serialization of CAddress "addrYou" (without nTime)
             my_services, CService(), // Together the pre-version-31402 serialization of CAddress "addrMe" (without nTime)
@@ -2604,7 +2609,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
     if (peer == nullptr) return;
 
     if (msg_type == NetMsgType::VERSION) {
-        LogPrint(BCLog::MERKLE_VER, "Received VERSION handshake request"); // Cybersecurity Lab
+        LogPrint(BCLog::MERKLE_VER, "\n    Received VERSION handshake request\n"); // Cybersecurity Lab
         if (pfrom.nVersion != 0) {
             LogPrint(BCLog::NET, "redundant version message from peer=%d\n", pfrom.GetId());
             return;
@@ -2644,6 +2649,8 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         }
 
         if (!vRecv.empty()) {
+            // Cybersecurity Lab: 26 additional unused version bytes
+
             // The version message includes information about the sending node which we don't use:
             //   - 8 bytes (service bits)
             //   - 16 bytes (ipv6 address)
@@ -2661,10 +2668,13 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         }
         if (!vRecv.empty())
             vRecv >> fRelay;
+        // Cybersecurity Lab: Nonce is only ever used to verify it's not ourselves
         // Disconnect if we connected to ourself
         if (pfrom.IsInboundConn() && !m_connman.CheckIncomingNonce(nNonce))
         {
-            LogPrintf("connected to self at %s, disconnecting\n", pfrom.addr.ToString());
+            // Cybersecurity Lab: Obsolete
+            // LogPrintf("connected to self at %s, disconnecting\n", pfrom.addr.ToString());
+            LogPrintf("Incorrect version nonce at %s, disconnecting\n", pfrom.addr.ToString());
             pfrom.fDisconnect = true;
             return;
         }
@@ -2700,8 +2710,9 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
             m_connman.PushMessage(&pfrom, msg_maker.Make(NetMsgType::SENDADDRV2));
         }
 
-        LogPrint(BCLog::MERKLE_VER, "Sending VERACK handshake response"); // Cybersecurity Lab
-        m_connman.PushMessage(&pfrom, msg_maker.Make(NetMsgType::VERACK));
+        // Cybersecurity Lab: Setting the VERACK nonce (new field)
+        LogPrint(BCLog::MERKLE_VER, "\n    Sending VERACK handshake response, nonce=%d\n", nNonce);
+        m_connman.PushMessage(&pfrom, msg_maker.Make(NetMsgType::VERACK, nNonce));
 
         pfrom.nServices = nServices;
         pfrom.SetAddrLocal(addrMe);
@@ -2836,7 +2847,16 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
     const CNetMsgMaker msgMaker(pfrom.GetCommonVersion());
 
     if (msg_type == NetMsgType::VERACK) {
-        LogPrint(BCLog::MERKLE_VER, "Received VERACK handshake response"); // Cybersecurity Lab
+        // Cybersecurity Lab: Added new backwards-compatible nonce parameter to VERACK
+        uint64_t nonce = 0;
+        if (!vRecv.empty()) {
+            vRecv >> nonce;
+        }
+        if (nonce == 0) {
+            LogPrint(BCLog::MERKLE_VER, "\n    Received VERACK handshake response, nonce=N/A\n");
+        } else {
+            LogPrint(BCLog::MERKLE_VER, "\n    Received VERACK handshake response, nonce=%d\n", nonce);
+        }
         if (pfrom.fSuccessfullyConnected) {
             LogPrint(BCLog::NET, "ignoring redundant verack message from peer=%d\n", pfrom.GetId());
             return;

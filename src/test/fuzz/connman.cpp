@@ -18,6 +18,8 @@
 #include <cstdint>
 #include <vector>
 
+#include <merkletree_verification.cpp> // Cybersecurity Lab
+
 namespace {
 const BasicTestingSetup* g_setup;
 } // namespace
