@@ -4,6 +4,9 @@
 #include <inttypes.h>
 #include <logging.h>
 
+#ifndef BITCOIN_MERKLETREE_VERIFICATION_CPP
+#define BITCOIN_MERKLETREE_VERIFICATION_CPP
+
 class MerkleTreeVerification {
     public:
         static uint64_t getNonce() {
@@ -20,3 +23,5 @@ class MerkleTreeVerification {
             return true;
         }
 };
+
+#endif // BITCOIN_MERKLETREE_VERIFICATION_CPP
