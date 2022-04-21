@@ -1174,6 +1174,7 @@ void PeerManagerImpl::PushNodeVersion(CNode& pnode, const Peer& peer)
     uint64_t your_services{addr.nServices};
 
     const bool tx_relay = !m_ignore_incoming_txs && peer.m_tx_relay != nullptr && !pnode.IsFeelerConn();
+    LogPrint(BCLog::MERKLE_VER, "Sending VERSION handshake request"); // Cybersecurity Lab
     m_connman.PushMessage(&pnode, CNetMsgMaker(INIT_PROTO_VERSION).Make(NetMsgType::VERSION, PROTOCOL_VERSION, my_services, nTime,
             your_services, addr_you, // Together the pre-version-31402 serialization of CAddress "addrYou" (without nTime)
             my_services, CService(), // Together the pre-version-31402 serialization of CAddress "addrMe" (without nTime)
@@ -2603,6 +2604,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
     if (peer == nullptr) return;
 
     if (msg_type == NetMsgType::VERSION) {
+        LogPrint(BCLog::MERKLE_VER, "Received VERSION handshake request"); // Cybersecurity Lab
         if (pfrom.nVersion != 0) {
             LogPrint(BCLog::NET, "redundant version message from peer=%d\n", pfrom.GetId());
             return;
@@ -2698,6 +2700,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
             m_connman.PushMessage(&pfrom, msg_maker.Make(NetMsgType::SENDADDRV2));
         }
 
+        LogPrint(BCLog::MERKLE_VER, "Sending VERACK handshake response"); // Cybersecurity Lab
         m_connman.PushMessage(&pfrom, msg_maker.Make(NetMsgType::VERACK));
 
         pfrom.nServices = nServices;
@@ -2833,6 +2836,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
     const CNetMsgMaker msgMaker(pfrom.GetCommonVersion());
 
     if (msg_type == NetMsgType::VERACK) {
+        LogPrint(BCLog::MERKLE_VER, "Received VERACK handshake response"); // Cybersecurity Lab
         if (pfrom.fSuccessfullyConnected) {
             LogPrint(BCLog::NET, "ignoring redundant verack message from peer=%d\n", pfrom.GetId());
             return;

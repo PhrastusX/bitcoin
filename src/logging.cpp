@@ -160,6 +160,7 @@ const CLogCategoryDesc LogCategories[] =
     {BCLog::VALIDATION, "validation"},
     {BCLog::I2P, "i2p"},
     {BCLog::IPC, "ipc"},
+    {BCLog::MERKLE_VER, "merkleverification"}, // Cybersecurity Lab
 #ifdef DEBUG_LOCKCONTENTION
     {BCLog::LOCK, "lock"},
 #endif
